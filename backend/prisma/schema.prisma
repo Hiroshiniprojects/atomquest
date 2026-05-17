@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum GoalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  RETURNED
+  LOCKED
+}
+
+enum CheckinStatus {
+  NOT_STARTED
+  ON_TRACK
+  COMPLETED
+  AT_RISK
+}
+
+enum EscalationStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  department   String?
+  managerId    String?
+  manager      User?    @relation("ManagerTeam", fields: [managerId], references: [id])
+  team         User[]   @relation("ManagerTeam")
+  goals        Goal[]
+  checkins     Checkin[]
+  audits       AuditLog[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Cycle {
+  id        String   @id @default(cuid())
+  name      String
+  year      Int
+  active    Boolean  @default(false)
+  goals     Goal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String
+  thrustArea  String
+  uomType     String
+  targetValue Float
+  actualValue Float?
+  weightage   Int
+  progress    Int        @default(0)
+  status      GoalStatus @default(DRAFT)
+  employeeId  String
+  managerId   String?
+  cycleId     String
+  employee    User       @relation(fields: [employeeId], references: [id])
+  cycle       Cycle      @relation(fields: [cycleId], references: [id])
+  checkins    Checkin[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Checkin {
+  id             String        @id @default(cuid())
+  quarter        String
+  actualValue    Float
+  status         CheckinStatus
+  employeeNote   String?
+  managerComment String?
+  goalId         String
+  employeeId     String
+  goal           Goal          @relation(fields: [goalId], references: [id])
+  employee       User          @relation(fields: [employeeId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  actor     User     @relation(fields: [actorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Escalation {
+  id         String           @id @default(cuid())
+  employeeId String?
+  managerId  String?
+  reason     String
+  severity   String
+  status     EscalationStatus @default(OPEN)
+  createdAt  DateTime         @default(now())
+}
