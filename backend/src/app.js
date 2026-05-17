@@ -16,8 +16,13 @@ const errorHandler = require("./middleware/error");
 
 const app = express();
 
+const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000")
+  .trim()
+  .replace(/^["']|["']$/g, "")
+  .replace(/\/$/, "");
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: frontendUrl,
   credentials: true
 }));
 
